@@ -1,0 +1,472 @@
+import React, { useState, useEffect } from 'react';
+import { Users, Wifi, WifiOff, Calendar, BarChart3, ArrowLeft, Fingerprint } from 'lucide-react';
+
+const AttendanceApp = () => {
+  const [currentView, setCurrentView] = useState('login');
+  const [isOffline, setIsOffline] = useState(false);
+  const [selectedClass, setSelectedClass] = useState('');
+  const [attendanceData, setAttendanceData] = useState({});
+  const [scanningStudent, setScanningStudent] = useState(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [scannedStudentName, setScannedStudentName] = useState('');
+
+  // Sample data for demonstration
+  const classes = ['Class 5A', 'Class 5B', 'Class 6A'];
+  const students = {
+    'Class 5A': [
+      { id: '001', name: 'रवि कुमार', nameEn: 'Ravi Kumar', photo: '👦' },
+      { id: '002', name: 'प्रिया शर्मा', nameEn: 'Priya Sharma', photo: '👧' },
+      { id: '003', name: 'अमित सिंह', nameEn: 'Amit Singh', photo: '👦' },
+      { id: '004', name: 'स्नेहा पटेल', nameEn: 'Sneha Patel', photo: '👧' },
+      { id: '005', name: 'रोहित गुप्ता', nameEn: 'Rohit Gupta', photo: '👦' },
+      { id: '006', name: 'काव्या रेड्डी', nameEn: 'Kavya Reddy', photo: '👧' }
+    ]
+  };
+
+  // Simulate fingerprint scanning
+  const simulateFingerprint = (studentId) => {
+    setScanningStudent(studentId);
+    setShowScanner(true);
+    
+    // Find student name for success message
+    const student = students[selectedClass]?.find(s => s.id === studentId);
+    const studentName = student?.name || 'Demo Student';
+    
+    setTimeout(() => {
+      setAttendanceData(prev => ({
+        ...prev,
+        [selectedClass]: {
+          ...prev[selectedClass],
+          [studentId]: {
+            status: 'present',
+            time: new Date().toLocaleTimeString(),
+            method: 'fingerprint'
+          }
+        }
+      }));
+      setScanningStudent(null);
+      setShowScanner(false);
+      
+      // Show success popup
+      setScannedStudentName(studentName);
+      setShowSuccess(true);
+      
+      // Auto-hide success popup after 2 seconds
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 2000);
+    }, 3000);
+  };
+
+  const toggleAttendance = (studentId) => {
+    const currentStatus = attendanceData[selectedClass]?.[studentId]?.status;
+    setAttendanceData(prev => ({
+      ...prev,
+      [selectedClass]: {
+        ...prev[selectedClass],
+        [studentId]: {
+          status: currentStatus === 'present' ? 'absent' : 'present',
+          time: new Date().toLocaleTimeString(),
+          method: 'manual'
+        }
+      }
+    }));
+  };
+
+  // Mobile-optimized Login View
+  const LoginView = () => (
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-green-600 flex flex-col">
+      <div className="h-8"></div>
+      
+      <div className="flex-1 flex flex-col justify-center px-6">
+        <div className="bg-white rounded-3xl shadow-2xl p-8">
+          <div className="text-center mb-8">
+            <div className="bg-blue-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+              <Users className="w-12 h-12 text-blue-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">स्मार्ट उपस्थिति</h1>
+            <p className="text-gray-600 text-lg">Smart Attendance System</p>
+            <p className="text-sm text-gray-500 mt-2">For Rural Schools</p>
+          </div>
+          
+          <div className="space-y-6">
+            <div>
+              <input
+                type="text"
+                placeholder="Teacher ID / शिक्षक आईडी"
+                className="w-full px-6 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                defaultValue="T001"
+              />
+            </div>
+            <div>
+              <input
+                type="password"
+                placeholder="PIN / पिन"
+                className="w-full px-6 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                defaultValue="1234"
+              />
+            </div>
+            <button
+              onClick={() => setCurrentView('dashboard')}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-blue-800 transition-all transform active:scale-95 shadow-lg"
+            >
+              Login / लॉगिन करें
+            </button>
+          </div>
+        </div>
+        
+        <div className="mt-6 text-center">
+          <div className="bg-white bg-opacity-20 rounded-full px-4 py-2 inline-flex items-center space-x-2">
+            {isOffline ? <WifiOff className="w-5 h-5 text-red-300" /> : <Wifi className="w-5 h-5 text-green-300" />}
+            <span className="text-white font-medium">
+              {isOffline ? 'ऑफलाइन मोड / Offline Mode' : 'कनेक्टेड / Connected'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Mobile-optimized Dashboard
+  const DashboardView = () => (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-6 pb-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-xl font-bold">Smart Attendance</h1>
+          <div className="flex items-center space-x-3">
+            {isOffline ? <WifiOff className="w-5 h-5" /> : <Wifi className="w-5 h-5" />}
+            <button
+              onClick={() => setIsOffline(!isOffline)}
+              className="text-xs bg-blue-800 px-3 py-2 rounded-full font-medium"
+            >
+              {isOffline ? 'Online' : 'Offline'}
+            </button>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white bg-opacity-20 rounded-2xl p-4 text-center">
+            <div className="text-2xl font-bold">156</div>
+            <div className="text-sm opacity-90">उपस्थित / Present</div>
+          </div>
+          <div className="bg-white bg-opacity-20 rounded-2xl p-4 text-center">
+            <div className="text-2xl font-bold">24</div>
+            <div className="text-sm opacity-90">अनुपस्थित / Absent</div>
+          </div>
+          <div className="bg-white bg-opacity-20 rounded-2xl p-4 text-center">
+            <div className="text-2xl font-bold">87%</div>
+            <div className="text-sm opacity-90">उपस्थिति / Attendance</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 -mt-4">
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">कक्षा चुनें / Select Class</h2>
+          <div className="grid grid-cols-1 gap-3">
+            {classes.map(cls => (
+              <button
+                key={cls}
+                onClick={() => {
+                  setSelectedClass(cls);
+                  setCurrentView('attendance');
+                }}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-4 px-6 rounded-xl font-semibold text-lg transition-all transform active:scale-95 shadow-md"
+              >
+                📚 {cls} ({students['Class 5A']?.length || 0} students)
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <button
+            onClick={() => setCurrentView('reports')}
+            className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all transform active:scale-95"
+          >
+            <BarChart3 className="w-12 h-12 text-purple-600 mb-3" />
+            <div className="text-left">
+              <div className="font-bold text-gray-800 text-lg">रिपोर्ट</div>
+              <div className="text-sm text-gray-500">Reports</div>
+            </div>
+          </button>
+          
+          <button className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all transform active:scale-95">
+            <Calendar className="w-12 h-12 text-orange-600 mb-3" />
+            <div className="text-left">
+              <div className="font-bold text-gray-800 text-lg">इतिहास</div>
+              <div className="text-sm text-gray-500">History</div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Success Popup
+  const SuccessPopup = () => {
+    if (!showSuccess) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-3xl p-8 text-center max-w-sm w-full animate-bounce">
+          <div className="mb-4">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="text-4xl">✅</div>
+            </div>
+            <h3 className="text-2xl font-bold text-green-600 mb-2">Success!</h3>
+            <p className="text-gray-800 font-semibold">{scannedStudentName}</p>
+            <p className="text-green-600 text-sm">सफलतापूर्वक स्कैन किया गया</p>
+            <p className="text-green-600 text-sm">Successfully Scanned</p>
+          </div>
+          
+          <div className="text-sm text-gray-500">
+            Attendance marked at {new Date().toLocaleTimeString()}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Fingerprint Scanner Overlay
+  const FingerprintScanner = () => {
+    if (!showScanner) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-3xl p-8 text-center max-w-sm w-full">
+          <div className="mb-6">
+            <div className="animate-pulse">
+              <Fingerprint className="w-24 h-24 text-blue-600 mx-auto mb-4" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">Scanning...</h3>
+            <p className="text-gray-600">कृपया अपनी उंगली स्कैनर पर रखें</p>
+            <p className="text-gray-600 text-sm">Please place finger on scanner</p>
+          </div>
+          
+          <div className="flex justify-center mb-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+          
+          <button
+            onClick={() => {
+              setShowScanner(false);
+              setScanningStudent(null);
+            }}
+            className="text-gray-500 text-sm"
+          >
+            Cancel / रद्द करें
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Mobile Attendance View
+  const AttendanceView = () => {
+    const classStudents = students[selectedClass] || [];
+    const presentCount = Object.values(attendanceData[selectedClass] || {}).filter(a => a.status === 'present').length;
+    
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setCurrentView('dashboard')}
+              className="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-all"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <h1 className="text-xl font-bold">{selectedClass}</h1>
+            <div className="text-right">
+              <div className="text-sm opacity-90">{new Date().toLocaleDateString()}</div>
+              <div className="text-xs opacity-75">आज / Today</div>
+            </div>
+          </div>
+          
+          <div className="bg-white bg-opacity-20 rounded-2xl p-4 text-center">
+            <div className="text-3xl font-bold">{presentCount}/{classStudents.length}</div>
+            <div className="text-sm opacity-90">उपस्थित / Present</div>
+          </div>
+        </div>
+
+        <div className="px-4 -mt-4">
+          <div className="bg-white rounded-2xl shadow-lg mb-6 p-6">
+            <div className="text-center mb-4">
+              <Fingerprint className="w-16 h-16 text-blue-600 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-gray-800">Fingerprint Scanner Ready</h3>
+              <p className="text-gray-600 text-sm">फिंगरप्रिंट स्कैनर तैयार है</p>
+            </div>
+            
+            <button
+              onClick={() => simulateFingerprint('demo')}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-blue-800 transition-all transform active:scale-95 shadow-md"
+            >
+              🔍 Test Fingerprint Scan
+            </button>
+          </div>
+
+          <div className="space-y-3 pb-6">
+            {classStudents.map(student => {
+              const attendance = attendanceData[selectedClass]?.[student.id];
+              const isScanning = scanningStudent === student.id;
+              
+              return (
+                <div
+                  key={student.id}
+                  className={`bg-white rounded-2xl shadow-md p-4 transition-all ${
+                    isScanning ? 'bg-yellow-50 border-2 border-yellow-300 shadow-lg' : ''
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-3xl">{student.photo}</div>
+                      <div>
+                        <div className="font-bold text-gray-800 text-lg">{student.name}</div>
+                        <div className="text-sm text-gray-500">ID: {student.id}</div>
+                        {attendance && (
+                          <div className="text-xs text-green-600 font-medium">
+                            ✓ {attendance.time}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col space-y-2">
+                      {isScanning ? (
+                        <div className="flex items-center space-x-2 text-yellow-600 font-medium">
+                          <div className="animate-spin text-lg">⏳</div>
+                          <span className="text-sm">स्कैन...</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => simulateFingerprint(student.id)}
+                            className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
+                          >
+                            👆 Scan
+                          </button>
+                          
+                          <button
+                            onClick={() => toggleAttendance(student.id)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              attendance?.status === 'present'
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                : 'bg-red-100 text-red-800 hover:bg-red-200'
+                            }`}
+                          >
+                            {attendance?.status === 'present' ? 'उपस्थित ✓' : 'अनुपस्थित ✗'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        
+        <FingerprintScanner />
+        <SuccessPopup />
+      </div>
+    );
+  };
+
+  // Mobile Reports View
+  const ReportsView = () => (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-6">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setCurrentView('dashboard')}
+            className="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-all"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-xl font-bold">रिपोर्ट / Reports</h1>
+          <div></div>
+        </div>
+      </div>
+
+      <div className="px-4 py-6 space-y-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">साप्ताहिक विवरण / Weekly Overview</h3>
+          <div className="space-y-4">
+            {['सोमवार/Mon', 'मंगलवार/Tue', 'बुधवार/Wed', 'गुरुवार/Thu', 'शुक्रवार/Fri'].map((day, index) => {
+              const percentage = Math.floor(75 + Math.random() * 20);
+              return (
+                <div key={day} className="flex justify-between items-center">
+                  <span className="font-medium">{day}</span>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-24 bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-green-500 h-3 rounded-full transition-all"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-bold text-green-600 w-12">
+                      {percentage}%
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">सरकारी रिपोर्ट / Gov. Reporting</h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center py-2">
+              <span>मिड-डे मील / Mid-day Meal</span>
+              <span className="font-bold text-blue-600">147 छात्र</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span>औसत उपस्थिति / Avg Attendance</span>
+              <span className="font-bold text-green-600">83.2%</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span>जोखिम में / At Risk (&lt; 75%)</span>
+              <span className="font-bold text-red-600">12 छात्र</span>
+            </div>
+          </div>
+          
+          <button className="w-full mt-6 bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all transform active:scale-95">
+            📊 मासिक रिपोर्ट / Monthly Report
+          </button>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">डेटा सिंक / Data Sync</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span>अंतिम सिंक / Last Sync</span>
+              <span className="text-sm text-gray-600 font-medium">
+                {isOffline ? 'प्रतीक्षित (ऑफलाइन)' : '2 मिनट पहले'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>प्रतीक्षित रिकॉर्ड / Pending</span>
+              <span className={`text-sm font-bold ${isOffline ? 'text-red-600' : 'text-green-600'}`}>
+                {isOffline ? '23 रिकॉर्ड' : '0 रिकॉर्ड'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="font-sans">
+      {currentView === 'login' && <LoginView />}
+      {currentView === 'dashboard' && <DashboardView />}
+      {currentView === 'attendance' && <AttendanceView />}
+      {currentView === 'reports' && <ReportsView />}
+    </div>
+  );
+};
+
+export default AttendanceApp;
