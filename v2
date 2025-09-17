@@ -1,0 +1,997 @@
+import React, { useState } from "react";
+
+const AttendanceApp = () => {
+  const [currentView, setCurrentView] = useState("login");
+  const [isOffline, setIsOffline] = useState(false);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [attendanceData, setAttendanceData] = useState({});
+  const [scanningStudent, setScanningStudent] = useState(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [scannedStudentName, setScannedStudentName] = useState("");
+
+  // Sample data
+  const classes = ["Class 5A", "Class 5B", "Class 6A"];
+  const students = {
+    "Class 5A": [
+      { id: "001", name: "रवि कुमार", photo: "👦" },
+      { id: "002", name: "प्रिया शर्मा", photo: "👧" },
+      { id: "003", name: "अमित सिंह", photo: "👦" },
+      { id: "004", name: "स्नेहा पटेल", photo: "👧" },
+      { id: "005", name: "रोहित गुप्ता", photo: "👦" },
+      { id: "006", name: "काव्या रेड्डी", photo: "👧" },
+    ],
+  };
+
+  // Simulate fingerprint scanning
+  const simulateFingerprint = (studentId) => {
+    setScanningStudent(studentId);
+    setShowScanner(true);
+
+    const student = students[selectedClass]?.find((s) => s.id === studentId);
+    const studentName = student?.name || "Demo Student";
+
+    setTimeout(() => {
+      setAttendanceData((prev) => ({
+        ...prev,
+        [selectedClass]: {
+          ...prev[selectedClass],
+          [studentId]: {
+            status: "present",
+            time: new Date().toLocaleTimeString(),
+            method: "fingerprint",
+          },
+        },
+      }));
+      setScanningStudent(null);
+      setShowScanner(false);
+
+      setScannedStudentName(studentName);
+      setShowSuccess(true);
+
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 2000);
+    }, 3000);
+  };
+
+  const toggleAttendance = (studentId) => {
+    const currentStatus = attendanceData[selectedClass]?.[studentId]?.status;
+    setAttendanceData((prev) => ({
+      ...prev,
+      [selectedClass]: {
+        ...prev[selectedClass],
+        [studentId]: {
+          status: currentStatus === "present" ? "absent" : "present",
+          time: new Date().toLocaleTimeString(),
+          method: "manual",
+        },
+      },
+    }));
+  };
+
+  // Styles
+  const containerStyle = {
+    fontFamily: "Arial, sans-serif",
+    minHeight: "100vh",
+    margin: 0,
+    padding: 0,
+  };
+
+  const loginContainerStyle = {
+    minHeight: "100vh",
+    background: "linear-gradient(135deg, #2563eb, #16a34a)",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "20px",
+  };
+
+  const cardStyle = {
+    background: "white",
+    borderRadius: "20px",
+    padding: "40px",
+    boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
+    width: "100%",
+    maxWidth: "400px",
+    textAlign: "center",
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "15px",
+    border: "2px solid #e5e7eb",
+    borderRadius: "10px",
+    fontSize: "16px",
+    marginBottom: "20px",
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
+  const buttonStyle = {
+    width: "100%",
+    padding: "15px",
+    background: "linear-gradient(to right, #2563eb, #1d4ed8)",
+    color: "white",
+    border: "none",
+    borderRadius: "10px",
+    fontSize: "18px",
+    fontWeight: "bold",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+  };
+
+  const overlayStyle = {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "rgba(0,0,0,0.8)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+    padding: "20px",
+  };
+
+  const modalStyle = {
+    background: "white",
+    borderRadius: "20px",
+    padding: "40px",
+    textAlign: "center",
+    maxWidth: "300px",
+    width: "100%",
+  };
+
+  // Success Popup Component
+  const SuccessPopup = () => {
+    if (!showSuccess) return null;
+
+    return (
+      <div style={overlayStyle}>
+        <div style={modalStyle}>
+          <div style={{ fontSize: "60px", marginBottom: "20px" }}>✅</div>
+          <h3
+            style={{
+              fontSize: "24px",
+              fontWeight: "bold",
+              color: "#16a34a",
+              marginBottom: "10px",
+            }}
+          >
+            Success!
+          </h3>
+          <p
+            style={{
+              color: "#1f2937",
+              fontWeight: "bold",
+              marginBottom: "5px",
+            }}
+          >
+            {scannedStudentName}
+          </p>
+          <p
+            style={{ color: "#16a34a", fontSize: "14px", marginBottom: "5px" }}
+          >
+            सफलतापूर्वक स्कैन किया गया
+          </p>
+          <p
+            style={{ color: "#16a34a", fontSize: "14px", marginBottom: "15px" }}
+          >
+            Successfully Scanned
+          </p>
+          <div style={{ fontSize: "12px", color: "#6b7280" }}>
+            Attendance marked at {new Date().toLocaleTimeString()}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Scanner Overlay Component
+  const FingerprintScanner = () => {
+    if (!showScanner) return null;
+
+    return (
+      <div style={overlayStyle}>
+        <div style={modalStyle}>
+          <div style={{ fontSize: "60px", marginBottom: "20px" }}>👆</div>
+          <h3
+            style={{
+              fontSize: "24px",
+              fontWeight: "bold",
+              color: "#1f2937",
+              marginBottom: "10px",
+            }}
+          >
+            Scanning...
+          </h3>
+          <p style={{ color: "#6b7280", marginBottom: "5px" }}>
+            कृपया अपनी उंगली स्कैनर पर रखें
+          </p>
+          <p
+            style={{ color: "#6b7280", fontSize: "14px", marginBottom: "20px" }}
+          >
+            Please place finger on scanner
+          </p>
+          <div
+            style={{
+              width: "30px",
+              height: "30px",
+              border: "3px solid #f3f3f3",
+              borderTop: "3px solid #2563eb",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              margin: "20px auto",
+            }}
+          ></div>
+          <button
+            onClick={() => {
+              setShowScanner(false);
+              setScanningStudent(null);
+            }}
+            style={{
+              color: "#6b7280",
+              fontSize: "14px",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Cancel / रद्द करें
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Login View Component
+  const LoginView = () => (
+    <div style={loginContainerStyle}>
+      <div style={cardStyle}>
+        <div
+          style={{
+            width: "80px",
+            height: "80px",
+            background: "#dbeafe",
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto 20px",
+            fontSize: "40px",
+          }}
+        >
+          👥
+        </div>
+        <h1
+          style={{
+            fontSize: "28px",
+            fontWeight: "bold",
+            color: "#1f2937",
+            marginBottom: "10px",
+          }}
+        >
+          स्मार्ट उपस्थिति
+        </h1>
+        <p style={{ color: "#6b7280", fontSize: "16px", marginBottom: "10px" }}>
+          Smart Attendance System
+        </p>
+        <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "30px" }}>
+          For Rural Schools
+        </p>
+
+        <input
+          type="text"
+          placeholder="Teacher ID / शिक्षक आईडी"
+          style={inputStyle}
+          defaultValue="T001"
+        />
+        <input
+          type="password"
+          placeholder="PIN / पिन"
+          style={inputStyle}
+          defaultValue="1234"
+        />
+        <button onClick={() => setCurrentView("dashboard")} style={buttonStyle}>
+          Login / लॉगिन करें
+        </button>
+      </div>
+
+      <div style={{ marginTop: "30px", textAlign: "center" }}>
+        <div
+          style={{
+            background: "rgba(255,255,255,0.2)",
+            borderRadius: "20px",
+            padding: "10px 20px",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "10px",
+            color: "white",
+          }}
+        >
+          <span>{isOffline ? "📶❌" : "📶"}</span>
+          <span>
+            {isOffline ? "ऑफलाइन मोड / Offline Mode" : "कनेक्टेड / Connected"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Dashboard View Component
+  const DashboardView = () => (
+    <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
+      <div
+        style={{
+          background: "linear-gradient(to right, #2563eb, #1d4ed8)",
+          color: "white",
+          padding: "20px",
+          paddingBottom: "40px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px",
+          }}
+        >
+          <h1 style={{ fontSize: "20px", fontWeight: "bold" }}>
+            Smart Attendance
+          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+            <span>{isOffline ? "📶❌" : "📶"}</span>
+            <button
+              onClick={() => setIsOffline(!isOffline)}
+              style={{
+                fontSize: "12px",
+                background: "#1e40af",
+                color: "white",
+                border: "none",
+                padding: "8px 15px",
+                borderRadius: "20px",
+                cursor: "pointer",
+              }}
+            >
+              {isOffline ? "Online" : "Offline"}
+            </button>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "15px",
+          }}
+        >
+          <div
+            style={{
+              background: "rgba(255,255,255,0.2)",
+              borderRadius: "15px",
+              padding: "15px",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: "24px", fontWeight: "bold" }}>156</div>
+            <div style={{ fontSize: "12px", opacity: 0.9 }}>
+              उपस्थित / Present
+            </div>
+          </div>
+          <div
+            style={{
+              background: "rgba(255,255,255,0.2)",
+              borderRadius: "15px",
+              padding: "15px",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: "24px", fontWeight: "bold" }}>24</div>
+            <div style={{ fontSize: "12px", opacity: 0.9 }}>
+              अनुपस्थित / Absent
+            </div>
+          </div>
+          <div
+            style={{
+              background: "rgba(255,255,255,0.2)",
+              borderRadius: "15px",
+              padding: "15px",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: "24px", fontWeight: "bold" }}>87%</div>
+            <div style={{ fontSize: "12px", opacity: 0.9 }}>
+              उपस्थिति / Attendance
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: "20px", marginTop: "-20px" }}>
+        <div
+          style={{
+            background: "white",
+            borderRadius: "15px",
+            padding: "20px",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+            marginBottom: "20px",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "20px",
+              fontWeight: "bold",
+              color: "#1f2937",
+              marginBottom: "15px",
+            }}
+          >
+            कक्षा चुनें / Select Class
+          </h2>
+          {classes.map((cls) => (
+            <button
+              key={cls}
+              onClick={() => {
+                setSelectedClass(cls);
+                setCurrentView("attendance");
+              }}
+              style={{
+                background: "linear-gradient(to right, #16a34a, #15803d)",
+                color: "white",
+                border: "none",
+                padding: "15px 20px",
+                borderRadius: "10px",
+                fontSize: "16px",
+                fontWeight: "bold",
+                cursor: "pointer",
+                width: "100%",
+                marginBottom: "10px",
+              }}
+            >
+              📚 {cls} ({students["Class 5A"]?.length || 0} students)
+            </button>
+          ))}
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "15px",
+          }}
+        >
+          <div
+            onClick={() => setCurrentView("reports")}
+            style={{
+              background: "white",
+              borderRadius: "15px",
+              padding: "20px",
+              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: "40px", marginBottom: "10px" }}>📊</div>
+            <div
+              style={{ fontWeight: "bold", fontSize: "18px", color: "#7c3aed" }}
+            >
+              रिपोर्ट
+            </div>
+            <div style={{ fontSize: "14px", color: "#6b7280" }}>Reports</div>
+          </div>
+
+          <div
+            style={{
+              background: "white",
+              borderRadius: "15px",
+              padding: "20px",
+              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: "40px", marginBottom: "10px" }}>📅</div>
+            <div
+              style={{ fontWeight: "bold", fontSize: "18px", color: "#ea580c" }}
+            >
+              इतिहास
+            </div>
+            <div style={{ fontSize: "14px", color: "#6b7280" }}>History</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Attendance View Component
+  const AttendanceView = () => {
+    const classStudents = students[selectedClass] || [];
+    const presentCount = Object.values(
+      attendanceData[selectedClass] || {}
+    ).filter((a) => a.status === "present").length;
+
+    return (
+      <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
+        <div
+          style={{
+            background: "linear-gradient(to right, #16a34a, #15803d)",
+            color: "white",
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "20px",
+            }}
+          >
+            <button
+              onClick={() => setCurrentView("dashboard")}
+              style={{
+                background: "rgba(255,255,255,0.2)",
+                border: "none",
+                color: "white",
+                padding: "10px",
+                borderRadius: "50%",
+                cursor: "pointer",
+                fontSize: "20px",
+              }}
+            >
+              ←
+            </button>
+            <h1 style={{ fontSize: "20px", fontWeight: "bold" }}>
+              {selectedClass}
+            </h1>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "14px", opacity: 0.9 }}>
+                {new Date().toLocaleDateString()}
+              </div>
+              <div style={{ fontSize: "12px", opacity: 0.75 }}>आज / Today</div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: "rgba(255,255,255,0.2)",
+              borderRadius: "15px",
+              padding: "15px",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: "32px", fontWeight: "bold" }}>
+              {presentCount}/{classStudents.length}
+            </div>
+            <div style={{ fontSize: "14px", opacity: 0.9 }}>
+              उपस्थित / Present
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: "20px", marginTop: "-20px" }}>
+          <div
+            style={{
+              background: "white",
+              borderRadius: "15px",
+              padding: "20px",
+              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+              marginBottom: "20px",
+            }}
+          >
+            <div style={{ textAlign: "center", marginBottom: "20px" }}>
+              <div style={{ fontSize: "60px", marginBottom: "15px" }}>👆</div>
+              <h3
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  color: "#1f2937",
+                  marginBottom: "5px",
+                }}
+              >
+                Fingerprint Scanner Ready
+              </h3>
+              <p style={{ color: "#6b7280", fontSize: "14px" }}>
+                फिंगरप्रिंट स्कैनर तैयार है
+              </p>
+            </div>
+
+            <button
+              onClick={() => simulateFingerprint("demo")}
+              style={buttonStyle}
+            >
+              🔍 Test Fingerprint Scan
+            </button>
+          </div>
+
+          <div>
+            {classStudents.map((student) => {
+              const attendance = attendanceData[selectedClass]?.[student.id];
+              const isScanning = scanningStudent === student.id;
+
+              return (
+                <div
+                  key={student.id}
+                  style={{
+                    background: isScanning ? "#fef3c7" : "white",
+                    border: isScanning ? "2px solid #fbbf24" : "none",
+                    borderRadius: "15px",
+                    padding: "15px",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    marginBottom: "10px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "15px",
+                    }}
+                  >
+                    <div style={{ fontSize: "30px" }}>{student.photo}</div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: "bold",
+                          color: "#1f2937",
+                        }}
+                      >
+                        {student.name}
+                      </div>
+                      <div style={{ fontSize: "14px", color: "#6b7280" }}>
+                        ID: {student.id}
+                      </div>
+                      {attendance && (
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "#16a34a",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          ✓ {attendance.time}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    {isScanning ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          color: "#fbbf24",
+                        }}
+                      >
+                        <div>⏳</div>
+                        <span style={{ fontSize: "14px", fontWeight: "bold" }}>
+                          स्कैन...
+                        </span>
+                      </div>
+                    ) : (
+                      <div>
+                        <button
+                          onClick={() => simulateFingerprint(student.id)}
+                          style={{
+                            background: "#dbeafe",
+                            color: "#1d4ed8",
+                            border: "none",
+                            padding: "8px 15px",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            cursor: "pointer",
+                            marginRight: "5px",
+                          }}
+                        >
+                          👆 Scan
+                        </button>
+                        <button
+                          onClick={() => toggleAttendance(student.id)}
+                          style={{
+                            background:
+                              attendance?.status === "present"
+                                ? "#dcfce7"
+                                : "#fee2e2",
+                            color:
+                              attendance?.status === "present"
+                                ? "#16a34a"
+                                : "#dc2626",
+                            border: "none",
+                            padding: "8px 15px",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {attendance?.status === "present"
+                            ? "उपस्थित ✓"
+                            : "अनुपस्थित ✗"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <FingerprintScanner />
+        <SuccessPopup />
+      </div>
+    );
+  };
+
+  // Reports View Component
+  const ReportsView = () => (
+    <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
+      <div
+        style={{
+          background: "linear-gradient(to right, #7c3aed, #6d28d9)",
+          color: "white",
+          padding: "20px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <button
+            onClick={() => setCurrentView("dashboard")}
+            style={{
+              background: "rgba(255,255,255,0.2)",
+              border: "none",
+              color: "white",
+              padding: "10px",
+              borderRadius: "50%",
+              cursor: "pointer",
+              fontSize: "20px",
+            }}
+          >
+            ←
+          </button>
+          <h1 style={{ fontSize: "20px", fontWeight: "bold" }}>
+            रिपोर्ट / Reports
+          </h1>
+          <div></div>
+        </div>
+      </div>
+
+      <div style={{ padding: "20px" }}>
+        <div
+          style={{
+            background: "white",
+            borderRadius: "15px",
+            padding: "20px",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+            marginBottom: "20px",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: "20px",
+              fontWeight: "bold",
+              color: "#1f2937",
+              marginBottom: "15px",
+            }}
+          >
+            साप्ताहिक विवरण / Weekly Overview
+          </h3>
+          {[
+            "सोमवार/Mon",
+            "मंगलवार/Tue",
+            "बुधवार/Wed",
+            "गुरुवार/Thu",
+            "शुक्रवार/Fri",
+          ].map((day) => {
+            const percentage = Math.floor(75 + Math.random() * 20);
+            return (
+              <div
+                key={day}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "15px",
+                }}
+              >
+                <span style={{ fontWeight: "500" }}>{day}</span>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "15px" }}
+                >
+                  <div
+                    style={{
+                      width: "100px",
+                      height: "12px",
+                      background: "#e5e7eb",
+                      borderRadius: "6px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${percentage}%`,
+                        height: "100%",
+                        background: "#16a34a",
+                        borderRadius: "6px",
+                      }}
+                    ></div>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      color: "#16a34a",
+                    }}
+                  >
+                    {percentage}%
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div
+          style={{
+            background: "white",
+            borderRadius: "15px",
+            padding: "20px",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+            marginBottom: "20px",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: "20px",
+              fontWeight: "bold",
+              color: "#1f2937",
+              marginBottom: "15px",
+            }}
+          >
+            सरकारी रिपोर्ट / Gov. Reporting
+          </h3>
+          <div style={{ marginBottom: "20px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "10px 0",
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
+              <span>मिड-डे मील / Mid-day Meal</span>
+              <span style={{ fontWeight: "bold", color: "#2563eb" }}>
+                147 छात्र
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "10px 0",
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
+              <span>औसत उपस्थिति / Avg Attendance</span>
+              <span style={{ fontWeight: "bold", color: "#16a34a" }}>
+                83.2%
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "10px 0",
+              }}
+            >
+              <span>जोखिम में / At Risk (&lt; 75%)</span>
+              <span style={{ fontWeight: "bold", color: "#dc2626" }}>
+                12 छात्र
+              </span>
+            </div>
+          </div>
+
+          <button
+            style={{
+              ...buttonStyle,
+              background: "linear-gradient(to right, #7c3aed, #6d28d9)",
+            }}
+          >
+            📊 मासिक रिपोर्ट / Monthly Report
+          </button>
+        </div>
+
+        <div
+          style={{
+            background: "white",
+            borderRadius: "15px",
+            padding: "20px",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: "20px",
+              fontWeight: "bold",
+              color: "#1f2937",
+              marginBottom: "15px",
+            }}
+          >
+            डेटा सिंक / Data Sync
+          </h3>
+          <div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "10px",
+              }}
+            >
+              <span>अंतिम सिंक / Last Sync</span>
+              <span
+                style={{
+                  fontSize: "14px",
+                  color: "#6b7280",
+                  fontWeight: "500",
+                }}
+              >
+                {isOffline ? "प्रतीक्षित (ऑफलाइन)" : "2 मिनट पहले"}
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span>प्रतीक्षित रिकॉर्ड / Pending</span>
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  color: isOffline ? "#dc2626" : "#16a34a",
+                }}
+              >
+                {isOffline ? "23 रिकॉर्ड" : "0 रिकॉर्ड"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={containerStyle}>
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+      {currentView === "login" && <LoginView />}
+      {currentView === "dashboard" && <DashboardView />}
+      {currentView === "attendance" && <AttendanceView />}
+      {currentView === "reports" && <ReportsView />}
+    </div>
+  );
+};
+
+export default AttendanceApp;
